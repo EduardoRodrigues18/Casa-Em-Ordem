@@ -8,10 +8,11 @@ const Stack = createStackNavigator();
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Auth">
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Auth">
         <Stack.Screen name="Auth" component={AuthStack} />
         <Stack.Screen name="App" component={AppTabs} />
       </Stack.Navigator>
     </NavigationContainer>
+
   );
 }

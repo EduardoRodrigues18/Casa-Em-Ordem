@@ -1,54 +1,86 @@
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import { useState } from 'react';
+import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { globalStyles } from '../../constants/Styles';
+import { supabase } from '../../lib/Supabase';
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const route = useRoute(); 
+  const nome = route.params?.nome;
+
+  const handleLogin = async () => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha,
+    });
+
+    if (error) {
+      Alert.alert('Erro', error.message);
+      return;
+    }
+
+    const user = data.user;
+
+    // Verifica se já existe registro na tabela 'usuarios'
+    const { data: usuarioExistente, error: selectError } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+
+    if (selectError && selectError.code !== 'PGRST116') {
+      Alert.alert('Erro ao verificar dados', selectError.message);
+      return;
+    }
+
+    if (!usuarioExistente && nome) {
+      // Se não existe, cria
+      const { error: insertError } = await supabase.from('usuarios').insert([
+        {
+          user_id: user.id,
+          nome: nome,
+        },
+      ]);
+
+      if (insertError) {
+        Alert.alert('Erro ao salvar dados', insertError.message);
+      }
+    }
+
+    navigation.replace('Home');
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+    <View style={globalStyles.container}>
+      <Text style={globalStyles.title}>Login</Text>
+
       <TextInput
-        style={styles.input}
-        placeholder="Usuário"
+        style={globalStyles.input}
+        placeholder="Email"
         autoCapitalize="none"
+        value={email}
+        onChangeText={setEmail}
       />
+
       <TextInput
-        style={styles.input}
+        style={globalStyles.input}
         placeholder="Senha"
-        secureTextEntry={true}
+        secureTextEntry
         autoCapitalize="none"
+        value={senha}
+        onChangeText={setSenha}
       />
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Acessar</Text>
+
+      <TouchableOpacity style={globalStyles.button} onPress={handleLogin}>
+        <Text style={globalStyles.buttonText}>Acessar</Text>
       </TouchableOpacity>
+
+      <Text onPress={() => navigation.navigate('Cadastro')}>
+        Não tem conta? Cadastre-se
+      </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F7FAFC' },
-  title: { fontSize: 24, color: '#6B46C1', marginBottom: 20 },
-  input: {
-    width: '80%',
-    height: 40,
-    borderColor: '#6B46C1', // Borda roxa da logo
-    borderWidth: 2,
-    borderRadius: 5,
-    marginTop: 10,
-    paddingHorizontal: 10,
-    backgroundColor: '#FFF', // Fundo claro para contraste
-  },
-  button: {
-    width: '80%',
-    height: 40,
-    backgroundColor: '#a6ebf2', // Rosa claro da logo
-    borderRadius: 5,
-    marginTop: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderColor: '#6B46C1', // Borda roxa para harmonia
-    borderWidth: 2,
-  },
-  buttonText: {
-    color: '#FFF', // Texto branco para contraste com o fundo rosa
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
