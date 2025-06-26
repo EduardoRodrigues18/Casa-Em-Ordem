@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { globalStyles } from '../../constants/Styles';
 import { supabase } from '../../lib/Supabase';
 
@@ -81,7 +82,12 @@ export default function ConfigScreen({ navigation }) {
 
   return (
     <View style={globalStyles.container}>
-      <Text style={globalStyles.title}>Configurações</Text>
+        <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.replace('Home')} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={28} color="#6C63FF" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Tarefas</Text>
+        </View>
 
       <Text style={{ fontSize: 18, marginTop: 20 }}>
         Nome do usuário: <Text style={{ fontWeight: 'bold' }}>{nome || '---'}</Text>
@@ -103,4 +109,45 @@ export default function ConfigScreen({ navigation }) {
       </TouchableOpacity>
     </View>
   );
+  
 }
+const styles = StyleSheet.create({
+  taskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    padding: 12,
+    marginBottom: 10,
+    borderRadius: 10,
+    width: '100%',
+  },
+  taskText: {
+    fontSize: 16,
+    marginLeft: 10,
+  },
+
+header: {
+  position: 'relative',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: 60,
+  marginTop: 40,
+  marginBottom: 10,
+},
+
+backButton: {
+  position: 'absolute',
+  left: -140,
+  top: 0,
+  bottom: 0,
+  justifyContent: 'center',
+  paddingLeft: 10,
+},
+
+headerTitle: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: '#6C63FF', // sua cor roxa padrão
+},
+
+});
