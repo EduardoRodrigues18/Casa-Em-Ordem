@@ -112,71 +112,71 @@ export default function CompartilharScreen({ navigation }) {
   };
 
 
-const responderSolicitacao = async (id, aceitar) => {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const responderSolicitacao = async (id, aceitar) => {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
 
-  if (userError || !userData?.user) {
-    Alert.alert('Erro', 'Usuário não autenticado.');
-    return;
-  }
-
-  const destinatarioId = userData.user.id;
-
-  // Buscar a solicitação
-  const { data: solicitacao, error: solicitacaoError } = await supabase
-    .from('compartilhamentos')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (solicitacaoError || !solicitacao) {
-    Alert.alert('Erro ao buscar solicitação.');
-    return;
-  }
-
-  const remetenteId = solicitacao.remetente_id;
-
-  if (aceitar) {
-    // Buscar tarefas do remetente
-    const { data: tasksDoRemetente, error: errorTasks } = await supabase
-      .from('task_usuarios')
-      .select('task_id')
-      .eq('user_id', remetenteId);
-
-    if (errorTasks) {
-      Alert.alert('Erro ao buscar tarefas compartilhadas', errorTasks.message);
+    if (userError || !userData?.user) {
+      Alert.alert('Erro', 'Usuário não autenticado.');
       return;
     }
 
-    // Gera os vínculos
-    const vinculos = tasksDoRemetente.map((t) => ({
-      task_id: t.task_id,
-      user_id: destinatarioId,
-    }));
+    const destinatarioId = userData.user.id;
 
-    const { error: insertError } = await supabase
-      .from('task_usuarios')
-      .insert(vinculos, { onConflict: ['task_id', 'user_id'] });
+    // Buscar a solicitação
+    const { data: solicitacao, error: solicitacaoError } = await supabase
+      .from('compartilhamentos')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (insertError) {
-      Alert.alert('Erro ao compartilhar tarefas', insertError.message);
+    if (solicitacaoError || !solicitacao) {
+      Alert.alert('Erro ao buscar solicitação.');
       return;
     }
-  }
 
-  // Atualizar status da solicitação
-  const { error: updateError } = await supabase
-    .from('compartilhamentos')
-    .update({ status: aceitar ? 'aceito' : 'recusado' })
-    .eq('id', id);
+    const remetenteId = solicitacao.remetente_id;
 
-  if (updateError) {
-    Alert.alert('Erro ao atualizar status da solicitação', updateError.message);
-  } else {
-    Alert.alert('Resposta enviada!');
-    carregarSolicitacoesRecebidas(); // recarrega a lista
-  }
-};
+    if (aceitar) {
+      // Buscar tarefas do remetente
+      const { data: tasksDoRemetente, error: errorTasks } = await supabase
+        .from('task_usuarios')
+        .select('task_id')
+        .eq('user_id', remetenteId);
+
+      if (errorTasks) {
+        Alert.alert('Erro ao buscar tarefas compartilhadas', errorTasks.message);
+        return;
+      }
+
+      // Gera os vínculos
+      const vinculos = tasksDoRemetente.map((t) => ({
+        task_id: t.task_id,
+        user_id: destinatarioId,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('task_usuarios')
+        .insert(vinculos, { onConflict: ['task_id', 'user_id'] });
+
+      if (insertError) {
+        Alert.alert('Erro ao compartilhar tarefas', insertError.message);
+        return;
+      }
+    }
+
+    // Atualizar status da solicitação
+    const { error: updateError } = await supabase
+      .from('compartilhamentos')
+      .update({ status: aceitar ? 'aceito' : 'recusado' })
+      .eq('id', id);
+
+    if (updateError) {
+      Alert.alert('Erro ao atualizar status da solicitação', updateError.message);
+    } else {
+      Alert.alert('Resposta enviada!');
+      carregarSolicitacoesRecebidas(); // recarrega a lista
+    }
+  };
 
 
   useEffect(() => {
@@ -210,32 +210,31 @@ const responderSolicitacao = async (id, aceitar) => {
         data={solicitacoesRecebidas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View
-            style={{
-              backgroundColor: '#f0f0f0',
-              marginVertical: 5,
-              padding: 10,
-              borderRadius: 10,
-            }}
-          >
-            <Text>De: {item.usuarios?.nome || item.remetente_id}</Text>
-            <View style={{ flexDirection: 'row', marginTop: 5 }}>
+          <View style={styles.solicitacaoContainer}>
+            <Text style={styles.solicitacaoTexto}>
+              De: {item.nomeRemetente || item.remetente_id}
+            </Text>
+
+            <View style={styles.botoesLinha}>
               <TouchableOpacity
-                style={[globalStyles.button, { marginRight: 10 }]}
+                style={[globalStyles.button, styles.botaoCompartilhar]}
                 onPress={() => responderSolicitacao(item.id, true)}
               >
-                <Text style={globalStyles.buttonText}>Aceitar</Text>
+                <Ionicons name="checkmark" size={24} color="white" />
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={globalStyles.button}
+                style={[globalStyles.button, styles.botaoCompartilhar]}
                 onPress={() => responderSolicitacao(item.id, false)}
               >
-                <Text style={globalStyles.buttonText}>Recusar</Text>
+                <Ionicons name="close" size={24} color="white" />
               </TouchableOpacity>
             </View>
           </View>
         )}
+
       />
+
     </View>
   );
 }
@@ -248,13 +247,32 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginBottom: 10,
   },
+  solicitacaoContainer: {
+    backgroundColor: '#f0f0f0',
+    marginVertical: 5,
+    padding: 10,
+    borderRadius: 10,
+  },
+  solicitacaoTexto: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  botoesLinha: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  botaoCompartilhar: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
   backButton: {
     position: 'absolute',
-    left: -60,
+    left: -50,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
   },
+
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -274,6 +292,15 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: '#FFF'
   },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  actionBtn: {
+    flex: 1,
+    marginHorizontal: 1,
+  },
   taskItem: {
     flexDirection: 'row',
     justifyContent: 'space-between', // isso move a lixeira pro canto direito
@@ -284,5 +311,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: '100%',
   },
+
 
 });
