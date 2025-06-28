@@ -5,7 +5,7 @@ export const enviarSolicitacaoCompartilhamento = async (nomeBusca) => {
   const { data: usuarios, error: buscaError } = await supabase
     .from('usuarios')
     .select('user_id')
-    .ilike('nome', `%${nomeBusca}%`)
+    .ilike('nome', `${nomeBusca}`)
     .limit(1);
 
   if (buscaError || !usuarios || usuarios.length === 0) {

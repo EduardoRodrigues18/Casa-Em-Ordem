@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/Supabase';
 
-export const fetchUserNome = async (userId) => {
+export const fetchUserNome = async () => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError || !userData?.user) {
@@ -20,7 +20,7 @@ export const fetchUserNome = async (userId) => {
     return null;
   }
 
-  return data[0].nome;
+  return { userId: id, nome: data[0].nome };
 };
 
 export const saveUserNome = async (userId, nome) => {

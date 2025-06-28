@@ -21,7 +21,7 @@ export const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.primary, // Usando cor primária do globalStyles
+    color: colors.primary, // Ajustado para usar a cor primária do globalStyles
   },
   taskItem: {
     flexDirection: 'row',

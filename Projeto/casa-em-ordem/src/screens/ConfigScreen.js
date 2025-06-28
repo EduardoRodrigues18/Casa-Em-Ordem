@@ -12,13 +12,12 @@ export default function ConfigScreen({ navigation }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user) {
-          setUserId(userData.user.id);
-          const userNome = await fetchUserNome(userData.user.id);
-          setNome(userNome || '');
+        const result = await fetchUserNome();
+        if (result) {
+          setUserId(result.userId);
+          setNome(result.nome || '');
         } else {
-          Alert.alert('Erro', 'Usuário não autenticado.');
+          Alert.alert('Erro', 'Usuário não autenticado ou nome não encontrado.');
         }
       } catch (error) {
         Alert.alert('Erro', error.message);
