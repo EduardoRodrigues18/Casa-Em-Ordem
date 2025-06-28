@@ -1,54 +1,26 @@
+// src/screens/TasksScreen.js
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { globalStyles } from '../../constants/Styles';
-import { supabase } from '../../lib/Supabase';
+import { deleteTaskById, getUserTasks, toggleTaskStatus } from '../Services/taskService';
+import { styles } from '../Styles/TasksScreenStyles';
 
 export default function TasksScreen({ navigation }) {
   const [tasks, setTasks] = useState([]);
-  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     const fetchTasks = async () => {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-
-      if (userError || !userData?.user) {
-        Alert.alert('Erro', 'Usuário não autenticado.');
-        return;
-      }
-
-      const id = userData.user.id;
-      setUserId(id);
-
-      const { data: relacoes, error } = await supabase
-        .from('task_usuarios')
-        .select('task_id, tasks (id, titulo, concluida, created_at)')
-        .eq('user_id', id); // ← agora está correto
-
-      if (!error) {
-        const mapa = new Map();
-        relacoes.forEach((r) => mapa.set(r.task_id, r.tasks));
-        const tarefas = Array.from(mapa.values()).sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at)
-        );
-        setTasks(tarefas);
-      } else {
-        Alert.alert('Erro ao buscar tarefas', error.message);
-      }
+      const tarefas = await getUserTasks();
+      if (tarefas) setTasks(tarefas);
     };
 
     fetchTasks();
   }, []);
 
   const toggleTask = async (id, currentStatus) => {
-    const { error } = await supabase
-      .from('tasks')
-      .update({ concluida: !currentStatus })
-      .eq('id', id);
-
-    if (error) {
-      Alert.alert('Erro ao atualizar tarefa', error.message);
-    } else {
+    const success = await toggleTaskStatus(id, currentStatus);
+    if (success) {
       setTasks((prev) =>
         prev.map((task) =>
           task.id === id ? { ...task, concluida: !task.concluida } : task
@@ -57,29 +29,18 @@ export default function TasksScreen({ navigation }) {
     }
   };
 
-  const deleteTask = (id) => {
+  const deleteTask = async (id) => {
     Alert.alert(
       'Confirmar exclusão',
       'Tem certeza que deseja excluir esta tarefa?',
       [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
+        { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Excluir',
           style: 'destructive',
           onPress: async () => {
-            const { error } = await supabase
-              .from('tasks')
-              .delete()
-              .eq('id', id);
-
-            if (error) {
-              Alert.alert('Erro ao excluir tarefa', error.message);
-            } else {
-              setTasks((prev) => prev.filter((task) => task.id !== id));
-            }
+            const success = await deleteTaskById(id);
+            if (success) setTasks((prev) => prev.filter((task) => task.id !== id));
           },
         },
       ],
@@ -102,7 +63,7 @@ export default function TasksScreen({ navigation }) {
         renderItem={({ item }) => (
           <View style={styles.taskItem}>
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center' }}
+              style={styles.taskButton}
               onPress={() => toggleTask(item.id, item.concluida)}
             >
               <Ionicons
@@ -119,7 +80,6 @@ export default function TasksScreen({ navigation }) {
                 {item.titulo}
               </Text>
             </TouchableOpacity>
-
             <TouchableOpacity onPress={() => deleteTask(item.id)}>
               <Ionicons name="trash" size={24} color="black" />
             </TouchableOpacity>
@@ -130,50 +90,3 @@ export default function TasksScreen({ navigation }) {
     </View>
   );
 }
-const styles = StyleSheet.create({
-  header: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-    marginTop: 40,
-    marginBottom: 10,
-  },
-  backButton: {
-    position: 'absolute',
-    left: -130,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#6C63FF',
-  },
-  taskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 10,
-    width: '100%',
-  },
-  taskText: {
-    fontSize: 16,
-    marginLeft: 10,
-    color: '#FFF'
-  },
-  taskItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between', // isso move a lixeira pro canto direito
-    alignItems: 'center',
-    backgroundColor: '#a6ebf2',
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 10,
-    width: '100%',
-  },
-
-});

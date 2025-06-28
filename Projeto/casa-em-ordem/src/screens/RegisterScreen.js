@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { globalStyles } from '../../constants/Styles';
-import { supabase } from '../../lib/Supabase';
+import { registerUser } from '../Services/registerService';
 
 export default function RegisterScreen({ navigation }) {
   const [nome, setNome] = useState('');
@@ -9,20 +9,13 @@ export default function RegisterScreen({ navigation }) {
   const [senha, setSenha] = useState('');
 
   const handleRegister = async () => {
-    // Cria a conta no Supabase Auth
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password: senha,
-    });
-
-    if (signUpError) {
-      Alert.alert('Erro ao criar conta', signUpError.message);
-      return;
+    try {
+      await registerUser(email, senha);
+      Alert.alert('Verifique seu e-mail', 'Confirme o cadastro antes de entrar.');
+      navigation.navigate('Login', { nome });
+    } catch (error) {
+      Alert.alert('Erro ao criar conta', error.message);
     }
-
-    // Envia o nome como parâmetro para a tela de login
-    Alert.alert('Verifique seu e-mail', 'Confirme o cadastro antes de entrar.');
-    navigation.navigate('Login', { nome });
   };
 
   return (
