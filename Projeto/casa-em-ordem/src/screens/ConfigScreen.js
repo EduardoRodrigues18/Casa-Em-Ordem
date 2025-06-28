@@ -86,7 +86,7 @@ export default function ConfigScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.replace('Home')} style={styles.backButton}>
             <Ionicons name="arrow-back" size={28} color="#6C63FF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tarefas</Text>
+        <Text style={styles.headerTitle}>Configurações</Text>
         </View>
 
       <Text style={{ fontSize: 18, marginTop: 20 }}>
@@ -137,7 +137,7 @@ header: {
 
 backButton: {
   position: 'absolute',
-  left: -140,
+  left: -110,
   top: 0,
   bottom: 0,
   justifyContent: 'center',

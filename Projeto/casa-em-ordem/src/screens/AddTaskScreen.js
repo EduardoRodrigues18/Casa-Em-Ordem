@@ -1,10 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
 import { globalStyles } from '../../constants/Styles';
 import { supabase } from '../../lib/Supabase';
-
 
 export default function AddTaskScreen({ navigation }) {
   const [titulo, setTitulo] = useState('');
@@ -23,30 +21,47 @@ export default function AddTaskScreen({ navigation }) {
 
     const userId = userData.user.id;
 
-    const { error: insertError } = await supabase.from('tasks').insert([
-      {
-        user_id: userId,
-        titulo,
-        concluida: false,
-      },
-    ]);
+    // 1. Inserir na tabela tasks
+    const { data: novaTask, error: insertError } = await supabase
+      .from('tasks')
+      .insert([
+        {
+          titulo,
+          concluida: false,
+        },
+      ])
+      .select()
+      .single(); // pegar a tarefa criada
 
     if (insertError) {
       Alert.alert('Erro ao salvar tarefa', insertError.message);
-    } else {
-      Alert.alert('Sucesso', 'Tarefa cadastrada com sucesso!');
-      setTitulo('');
-      navigation.goBack(); // Volta para a tela anterior (Tasks)
+      return;
     }
+
+    // 2. Relacionar na tabela task_usuarios
+    const { error: relacaoError } = await supabase.from('task_usuarios').insert([
+      {
+        user_id: userId,
+        task_id: novaTask.id,
+      },
+    ]);
+
+    if (relacaoError) {
+      Alert.alert('Erro ao vincular tarefa ao usuário', relacaoError.message);
+      return;
+    }
+
+    Alert.alert('Sucesso', 'Tarefa cadastrada com sucesso!');
+    setTitulo(''); // Volta para a tela anterior
   };
 
   return (
     <View style={globalStyles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.replace('Home')} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.replace('Home')}  style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color="#6C63FF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tarefas</Text>
+        <Text style={styles.headerTitle}>Nova Tarefa</Text>
       </View>
 
       <TextInput
@@ -58,10 +73,10 @@ export default function AddTaskScreen({ navigation }) {
       <TouchableOpacity style={globalStyles.button} onPress={handleSalvar}>
         <Text style={globalStyles.buttonText}>Salvar Tarefa</Text>
       </TouchableOpacity>
-
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   header: {
     position: 'relative',
@@ -73,7 +88,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    left: -130,
+    left: -120,
     top: 0,
     bottom: 0,
     justifyContent: 'center',

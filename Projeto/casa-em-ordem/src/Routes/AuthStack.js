@@ -4,7 +4,9 @@ import ConfigScreen from '../screens/ConfigScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import ShareScreen from '../screens/ShareScreen';
 import TaskScreen from '../screens/TaskScreen';
+
 
 
 const Stack = createNativeStackNavigator();
@@ -18,6 +20,8 @@ export default function AuthNavigator() {
       <Stack.Screen name="Tasks" component={TaskScreen} />
       <Stack.Screen name="CadastroTasks" component={AddTaskScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="CompartilharTarefa" component={ShareScreen} />
+
     </Stack.Navigator>
   );
 }

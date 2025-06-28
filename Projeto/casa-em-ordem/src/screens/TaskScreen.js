@@ -8,7 +8,6 @@ export default function TasksScreen({ navigation }) {
   const [tasks, setTasks] = useState([]);
   const [userId, setUserId] = useState(null);
 
-  // Buscar tarefas do usuário
   useEffect(() => {
     const fetchTasks = async () => {
       const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -21,16 +20,20 @@ export default function TasksScreen({ navigation }) {
       const id = userData.user.id;
       setUserId(id);
 
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', id)
-        .order('created_at', { ascending: false });
+      const { data: relacoes, error } = await supabase
+        .from('task_usuarios')
+        .select('task_id, tasks (id, titulo, concluida, created_at)')
+        .eq('user_id', id); // ← agora está correto
 
-      if (error) {
-        Alert.alert('Erro ao buscar tarefas', error.message);
+      if (!error) {
+        const mapa = new Map();
+        relacoes.forEach((r) => mapa.set(r.task_id, r.tasks));
+        const tarefas = Array.from(mapa.values()).sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+        setTasks(tarefas);
       } else {
-        setTasks(data);
+        Alert.alert('Erro ao buscar tarefas', error.message);
       }
     };
 
@@ -53,36 +56,36 @@ export default function TasksScreen({ navigation }) {
       );
     }
   };
+
   const deleteTask = (id) => {
-  Alert.alert(
-    'Confirmar exclusão',
-    'Tem certeza que deseja excluir esta tarefa?',
-    [
-      {
-        text: 'Cancelar',
-        style: 'cancel',
-      },
-      {
-        text: 'Excluir',
-        style: 'destructive',
-        onPress: async () => {
-          const { error } = await supabase
-            .from('tasks')
-            .delete()
-            .eq('id', id);
-
-          if (error) {
-            Alert.alert('Erro ao excluir tarefa', error.message);
-          } else {
-            setTasks((prev) => prev.filter((task) => task.id !== id));
-          }
+    Alert.alert(
+      'Confirmar exclusão',
+      'Tem certeza que deseja excluir esta tarefa?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
         },
-      },
-    ],
-    { cancelable: true }
-  );
-};
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await supabase
+              .from('tasks')
+              .delete()
+              .eq('id', id);
 
+            if (error) {
+              Alert.alert('Erro ao excluir tarefa', error.message);
+            } else {
+              setTasks((prev) => prev.filter((task) => task.id !== id));
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   return (
     <View style={globalStyles.container}>
@@ -93,43 +96,40 @@ export default function TasksScreen({ navigation }) {
         <Text style={styles.headerTitle}>Tarefas</Text>
       </View>
 
-<FlatList
-  data={tasks}
-  keyExtractor={(item) => item.id}
-  renderItem={({ item }) => (
-    <View style={styles.taskItem}>
-      <TouchableOpacity
-        style={{ flexDirection: 'row', alignItems: 'center' }}
-        onPress={() => toggleTask(item.id, item.concluida)}
-      >
-        <Ionicons
-          name={item.concluida ? 'checkbox' : 'square-outline'}
-          size={24}
-          color="#6C63FF"
-        />
-        <Text
-          style={[
-            styles.taskText,
-            item.concluida && { textDecorationLine: 'line-through', color: '#FFF' },
-          ]}
-        >
-          {item.titulo}
-        </Text>
-      </TouchableOpacity>
+      <FlatList
+        data={tasks}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.taskItem}>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => toggleTask(item.id, item.concluida)}
+            >
+              <Ionicons
+                name={item.concluida ? 'checkbox' : 'square-outline'}
+                size={24}
+                color="#6C63FF"
+              />
+              <Text
+                style={[
+                  styles.taskText,
+                  item.concluida && { textDecorationLine: 'line-through', color: '#888' },
+                ]}
+              >
+                {item.titulo}
+              </Text>
+            </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => deleteTask(item.id)}>
-        <Ionicons name="trash" size={24} color="black" />
-      </TouchableOpacity>
-    </View>
-  )}
-  style={{ width: '100%', marginTop: 20 }}
-/>
-
-
+            <TouchableOpacity onPress={() => deleteTask(item.id)}>
+              <Ionicons name="trash" size={24} color="black" />
+            </TouchableOpacity>
+          </View>
+        )}
+        style={{ width: '100%', marginTop: 20 }}
+      />
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   header: {
     position: 'relative',
@@ -166,14 +166,14 @@ const styles = StyleSheet.create({
     color: '#FFF'
   },
   taskItem: {
-  flexDirection: 'row',
-  justifyContent: 'space-between', // isso move a lixeira pro canto direito
-  alignItems: 'center',
-  backgroundColor: '#a6ebf2',
-  padding: 12,
-  marginBottom: 10,
-  borderRadius: 10,
-  width: '100%',
-},
+    flexDirection: 'row',
+    justifyContent: 'space-between', // isso move a lixeira pro canto direito
+    alignItems: 'center',
+    backgroundColor: '#a6ebf2',
+    padding: 12,
+    marginBottom: 10,
+    borderRadius: 10,
+    width: '100%',
+  },
 
 });
